@@ -51,11 +51,11 @@ public class OperatingSystem {
         arr[0] = null;//a
         arr[1] = null;//b
         arr[2] = null;//c
-        arr[3] = ++numberOfProcesses;
-        arr[4] = 8;
-        arr[5] = ProcessState.CREATED;
-        arr[6] = 8;
-        arr[7] = 7+instructions.size();
+        arr[3] = ++numberOfProcesses;//PID
+        arr[4] = 8;//PC
+        arr[5] = ProcessState.CREATED;//State
+        arr[6] = 8;//Instructions Start
+        arr[7] = 7+instructions.size();//Instructions End
 
         int j = 8;
         for ( int i = 0 ; i < instructions.size() ; i++){
@@ -117,7 +117,6 @@ public class OperatingSystem {
     public static void main(String[] args) {
 
         OperatingSystem os = new OperatingSystem();
-//        os.createProcess("src/Program_1.txt");
 
         for (int i = 1 ; i <= 3 ; i++){
             os.createProcess("src/Program_"+i+".txt");
