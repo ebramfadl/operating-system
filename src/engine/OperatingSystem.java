@@ -10,15 +10,22 @@ public class OperatingSystem {
 
     //<p1,p2,p3>
     // 0  1  2
-    private ArrayList<Object[]> memory;
+    private ArrayList<Process> memory;
+    private ArrayList<Integer> processesLocations;
+//    private ArrayList<Integer> processesInstructionsPerSlice;
+
     private int availableMemorySpace;
     private int numberOfProcesses;
-    private Queue<Integer> readyQueue;
-    private Queue<Integer> blockedQueue;
+    private int completedProcesses;
+
+    private LinkedList<Integer> readyQueue;
+    private LinkedList<Integer> blockedQueue;
 
     private boolean fileMutex;
     private boolean inputMutex;
     private boolean outputMutex;
+
+    private int maximumInstructionsPerSlice;
 
     public OperatingSystem(){
         memory = new ArrayList<>();
@@ -26,6 +33,75 @@ public class OperatingSystem {
         numberOfProcesses = 0;
         readyQueue = new LinkedList<>();
         blockedQueue = new LinkedList<>();
+        processesLocations = new ArrayList<Integer>();
+//        processesInstructionsPerSlice = new ArrayList<Integer>();
+
+        maximumInstructionsPerSlice = 2;
+        completedProcesses = 0;
+    }
+
+    public ArrayList<Process> getMemory() {
+        return memory;
+    }
+
+    public ArrayList<Integer> getProcessesLocations() {
+        return processesLocations;
+    }
+
+    public int getAvailableMemorySpace() {
+        return availableMemorySpace;
+    }
+
+    public void setAvailableMemorySpace(int availableMemorySpace) {
+        this.availableMemorySpace = availableMemorySpace;
+    }
+
+    public int getNumberOfProcesses() {
+        return numberOfProcesses;
+    }
+
+    public void setNumberOfProcesses(int numberOfProcesses) {
+        this.numberOfProcesses = numberOfProcesses;
+    }
+
+    public LinkedList<Integer> getReadyQueue() {
+        return readyQueue;
+    }
+
+    public LinkedList<Integer> getBlockedQueue() {
+        return blockedQueue;
+    }
+
+    public boolean getFileMutex() {
+        return fileMutex;
+    }
+
+    public void setFileMutex(boolean fileMutex) {
+        this.fileMutex = fileMutex;
+    }
+
+    public boolean getInputMutex() {
+        return inputMutex;
+    }
+
+    public void setInputMutex(boolean inputMutex) {
+        this.inputMutex = inputMutex;
+    }
+
+    public boolean getOutputMutex() {
+        return outputMutex;
+    }
+
+    public void setOutputMutex(boolean outputMutex) {
+        this.outputMutex = outputMutex;
+    }
+
+    public int getCompletedProcesses() {
+        return completedProcesses;
+    }
+
+    public void setCompletedProcesses(int completedProcesses) {
+        this.completedProcesses = completedProcesses;
     }
 
     public void createProcess(String filePath){
@@ -45,47 +121,118 @@ public class OperatingSystem {
             e.printStackTrace();
         }
 
-        Object[] arr = new Object[8+instructions.size()];
-        availableMemorySpace -= arr.length;
 
-        arr[0] = null;//a
-        arr[1] = null;//b
-        arr[2] = null;//c
-        arr[3] = ++numberOfProcesses;//PID
-        arr[4] = 8;//PC
-        arr[5] = ProcessState.CREATED;//State
-        arr[6] = 8;//Instructions Start
-        arr[7] = 7+instructions.size();//Instructions End
+        Integer a = null;
+        Integer b = null;
+        Integer c = null;
 
-        int j = 8;
-        for ( int i = 0 ; i < instructions.size() ; i++){
-            arr[j] = instructions.get(i);
-            j++;
-        }
+        PCB pcb = new PCB(++numberOfProcesses,ProcessState.CREATED,0,0,instructions.size()-1);
+        Process process = new Process(a,b,c,pcb,instructions);
 
-        memory.add(arr);
-        readyQueue.add((int)arr[3]);
+        availableMemorySpace -= process.getProcessBlockSize();
+
+        memory.add(process);
+        processesLocations.add(process.getPcb().getProcessID());
+//        processesInstructionsPerSlice.add(0);
+        readyQueue.add(process.getPcb().getProcessID());
 
     }
 
+
+    public void reSchedule(){
+        int processId = readyQueue.getFirst();
+        int processLocation = processesLocations.indexOf(processId);
+        Process currentProcess = memory.get(processId);
+
+        if(currentProcess.getCompletedInstructions() >= maximumInstructionsPerSlice){
+            readyQueue.add(readyQueue.remove());
+        }
+
+    }
+
+    public Object takeUserInput(){
+        Scanner scanner = new Scanner(System.in);
+
+        if(scanner.hasNextInt()){
+            return scanner.nextInt();
+        }
+        else if(scanner.hasNextDouble()){
+            return scanner.nextDouble();
+        }
+        return scanner.nextLine();
+
+    }
+
+    public void writeToMemory(String var, int processLocation,boolean isReadFile,String filePath){
+        Process process = memory.get(processLocation);
+
+        Object value;
+        if(isReadFile)
+            value = readFile(filePath);
+        else
+            value = takeUserInput();
+
+        switch (var){
+            case "a" : process.setA(value);break;
+            case "b" : process.setB(value);break;
+            case "c" : process.setC(value);break;
+        }
+
+        process.getPcb().setPC(process.getPcb().getPC()+1);
+        if(process.getPcb().getPC() == process.getInstructions().size()){
+            process.getPcb().setState(ProcessState.COMPLETED);
+            readyQueue.remove(0);
+//            completedProcesses++;
+        }
+        process.setCompletedInstructions(process.getCompletedInstructions()+1);
+
+//        processesInstructionsPerSlice.set(processLocation,completedInstructions+1);
+    }
+
+
+    public Object readFile(String filePath){
+        File file = new File(filePath);
+        String str = "";
+        try {
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNext()){
+                str += scanner.nextLine();
+            }
+            scanner.close();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        return str;
+    }
+
+    public boolean checkAllProcessesFinished(){
+        return readyQueue.isEmpty();
+        //return completedProcesses == numberOfProcesses;
+    }
+
+
+
+
     public void displayMemoryContent(){
+        int memoryLocation = -1;
+        for (Process process : memory){
+            System.out.println("======================================Process "+process.getPcb().getProcessID()+"====================================");
+            System.out.println("Executed "+process.getCompletedInstructions()+"/"+maximumInstructionsPerSlice);
+            System.out.println(++memoryLocation+" : a = "+process.getA());
+            System.out.println(++memoryLocation+" : b = "+process.getB());
+            System.out.println(++memoryLocation+" : c = "+process.getC());
+            System.out.println(++memoryLocation+" : ID = "+process.getPcb().getProcessID());
+            System.out.println(++memoryLocation+" : PC = "+process.getPcb().getPC());
+            System.out.println(++memoryLocation+" : State = "+process.getPcb().getState());
+            System.out.println(++memoryLocation+" : Instruction Start = "+process.getPcb().getStart());
+            System.out.println(++memoryLocation+" : Instruction End = "+process.getPcb().getEnd());
 
-        for (Object[] process : memory){
-            System.out.println("======================================Process "+process[3]+"====================================");
-            System.out.println("0 : a = "+process[0]);
-            System.out.println("1 : b = "+process[1]);
-            System.out.println("2 : c = "+process[2]);
-            System.out.println("3 : ID = "+process[3]);
-            System.out.println("4 : PC = "+process[4]);
-            System.out.println("5 : State = "+process[5]);
-            System.out.println("6 : Instruction Start = "+process[6]);
-            System.out.println("7 : Instruction End = "+process[7]);
-
-            for (int i = 8 ; i < process.length ; i++){
-                if ((int)process[4] == i){
-                    System.out.println(i + " : instruction = "+process[i] + "     <<<<<<<<<<< PC");
+            for (int i = 0 ; i < process.getInstructions().size() ; i++){
+                if (process.getPcb().getPC() == i){
+                    System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i) + "     <<<<<<<<<<< PC");
                 }
-                System.out.println(i + " : instruction = "+process[i]);
+                System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i));
             }
             System.out.println("=====================================================================");
             System.out.println();
@@ -93,6 +240,8 @@ public class OperatingSystem {
         }
 
     }
+
+
 
     public String toString(){
         String str = "";
@@ -111,18 +260,16 @@ public class OperatingSystem {
         }
         str += "]"+"\n";
 
-        return str;
+
+        System.out.println(str);
+        System.out.println(processesLocations);
+        displayMemoryContent();
+        return "";
     }
 
     public static void main(String[] args) {
 
-        OperatingSystem os = new OperatingSystem();
 
-        for (int i = 1 ; i <= 3 ; i++){
-            os.createProcess("src/Program_"+i+".txt");
-        }
-        System.out.println(os);
-        os.displayMemoryContent();
     }
 
 }
