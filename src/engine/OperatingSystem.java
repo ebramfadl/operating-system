@@ -145,6 +145,7 @@ public class OperatingSystem {
         Process currentProcess = memory.get(processId);
 
         if(currentProcess.getCompletedInstructions() >= maximumInstructionsPerSlice){
+            currentProcess.getPcb().setState(ProcessState.READY);
             readyQueue.add(readyQueue.remove());
         }
 
@@ -163,12 +164,17 @@ public class OperatingSystem {
 
     }
 
-    public void writeToMemory(String var, int processLocation,boolean isReadFile,String filePath){
+    public void writeToMemory(String var, int processLocation,boolean isReadFile,String filePathVar){
         Process process = memory.get(processLocation);
-
+        Object filePath = "";
+        switch (filePathVar){
+            case "a" : filePath = process.getA();break;
+            case "b" : filePath = process.getB();break;
+            case "c" : filePath = process.getC();break;
+        }
         Object value;
         if(isReadFile)
-            value = readFile(filePath);
+            value = readFile((String) filePath);
         else
             value = takeUserInput();
 
@@ -185,13 +191,13 @@ public class OperatingSystem {
 //            completedProcesses++;
         }
         process.setCompletedInstructions(process.getCompletedInstructions()+1);
-
+        process.getPcb().setState(ProcessState.RUNNING);
 //        processesInstructionsPerSlice.set(processLocation,completedInstructions+1);
     }
 
 
     public Object readFile(String filePath){
-        File file = new File(filePath);
+        File file = new File("src/"+filePath);
         String str = "";
         try {
             Scanner scanner = new Scanner(file);

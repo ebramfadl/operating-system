@@ -13,6 +13,8 @@ public class Interpreter {
     }
 
     public void execute(){
+        operatingSystem.reSchedule();
+
         int processId = operatingSystem.getReadyQueue().getFirst();
         int processLocation = operatingSystem.getProcessesLocations().indexOf(processId);
         Process currentProcess = operatingSystem.getMemory().get(processLocation);
@@ -22,11 +24,11 @@ public class Interpreter {
         if(instruction[0].equals("assign")){
             if(instruction.length == 3){
                 operatingSystem.writeToMemory(instruction[1],processLocation,false,"");
-                operatingSystem.reSchedule();
+//                operatingSystem.reSchedule();
             }
             else{
                 operatingSystem.writeToMemory(instruction[1],processLocation,true,instruction[3]);
-                operatingSystem.reSchedule();
+//                operatingSystem.reSchedule();
             }
 
         }
