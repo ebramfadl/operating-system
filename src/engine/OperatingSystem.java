@@ -8,15 +8,11 @@ import java.util.Scanner;
 
 public class OperatingSystem {
 
-    //<p1,p2,p3>
-    // 0  1  2
     private ArrayList<Process> memory;
     private ArrayList<Integer> processesLocations;
-//    private ArrayList<Integer> processesInstructionsPerSlice;
 
     private int availableMemorySpace;
     private int numberOfProcesses;
-    private int completedProcesses;
 
     private LinkedList<Integer> readyQueue;
     private LinkedList<Integer> blockedQueue;
@@ -34,10 +30,8 @@ public class OperatingSystem {
         readyQueue = new LinkedList<>();
         blockedQueue = new LinkedList<>();
         processesLocations = new ArrayList<Integer>();
-//        processesInstructionsPerSlice = new ArrayList<Integer>();
 
         maximumInstructionsPerSlice = 2;
-        completedProcesses = 0;
     }
 
     public ArrayList<Process> getMemory() {
@@ -96,14 +90,6 @@ public class OperatingSystem {
         this.outputMutex = outputMutex;
     }
 
-    public int getCompletedProcesses() {
-        return completedProcesses;
-    }
-
-    public void setCompletedProcesses(int completedProcesses) {
-        this.completedProcesses = completedProcesses;
-    }
-
     public void createProcess(String filePath){
 
         File file = new File(filePath);
@@ -126,14 +112,13 @@ public class OperatingSystem {
         Integer b = null;
         Integer c = null;
 
-        PCB pcb = new PCB(++numberOfProcesses,ProcessState.CREATED,0,0,instructions.size()-1);
+        PCB pcb = new PCB(++numberOfProcesses,ProcessState.READY,0,0,instructions.size()-1);
         Process process = new Process(a,b,c,pcb,instructions);
 
         availableMemorySpace -= process.getProcessBlockSize();
 
         memory.add(process);
         processesLocations.add(process.getPcb().getProcessID());
-//        processesInstructionsPerSlice.add(0);
         readyQueue.add(process.getPcb().getProcessID());
 
     }
@@ -195,8 +180,6 @@ public class OperatingSystem {
         }
 
         reSchedule();
-//        memory.get(processLocation).setCompletedInstructions(process.getCompletedInstructions()+1);
-//        processesInstructionsPerSlice.set(processLocation,completedInstructions+1);
     }
 
 
@@ -218,7 +201,6 @@ public class OperatingSystem {
 
     public boolean checkAllProcessesFinished(){
         return readyQueue.isEmpty();
-        //return completedProcesses == numberOfProcesses;
     }
 
 
@@ -227,7 +209,7 @@ public class OperatingSystem {
     public void displayMemoryContent(){
         int memoryLocation = -1;
         for (Process process : memory){
-            System.out.println("======================================Process "+process.getPcb().getProcessID()+"====================================");
+            System.out.println("===================================Process "+process.getPcb().getProcessID()+"==========================");
             System.out.println("Executed "+process.getCompletedInstructions()+" instructions");
             System.out.println(++memoryLocation+" : a = "+process.getA());
             System.out.println(++memoryLocation+" : b = "+process.getB());
@@ -240,7 +222,7 @@ public class OperatingSystem {
 
             for (int i = 0 ; i < process.getInstructions().size() ; i++){
                 if (process.getPcb().getPC() == i){
-                    System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i) + "     <<<<<<<<<<< PC");
+                    System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i) + "   <<<<<<<<<<< PC");
                 }
                 System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i));
             }

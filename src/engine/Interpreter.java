@@ -19,35 +19,37 @@ public class Interpreter {
             int processLocation = operatingSystem.getProcessesLocations().indexOf(processId);
             Process currentProcess = operatingSystem.getMemory().get(processLocation);
 
-            String[] instruction = currentProcess.getInstructions().get(currentProcess.getPcb().getPC()).split(" ");
+            String line = currentProcess.getInstructions().get(currentProcess.getPcb().getPC());
+            String[] instruction = line.split(" ");
 
+            System.out.println("Executing instruction [ "+line+" ] From Process "+currentProcess.getPcb().getProcessID());
             if (instruction[0].equals("assign")) {
                 if (instruction.length == 3) {
+                    System.out.println("Enter the value of variable : "+instruction[1]);
                     operatingSystem.writeToMemory(instruction[1], processLocation, false, "");
-//                operatingSystem.reSchedule();
                 } else {
                     operatingSystem.writeToMemory(instruction[1], processLocation, true, instruction[3]);
-//                operatingSystem.reSchedule();
                 }
 
-            } else if (instruction[0].equals("print")) {
+            }
+            else if (instruction[0].equals("print")) {
 
-            } else if (instruction[0].equals("printFromTo")) {
+            }
+            else if (instruction[0].equals("printFromTo")) {
 
-            } else if (instruction[0].equals("writeFile")) {
+            }
+            else if (instruction[0].equals("writeFile")) {
 
-            } else if (instruction[0].equals("readFile")) {
+            }
+            else if (instruction[0].equals("semWait")) {
 
-            } else if (instruction[0].equals("semWait")) {
-
-            } else if (instruction[0].equals("semSignal")) {
+            }
+            else if (instruction[0].equals("semSignal")) {
 
             }
             System.out.println(operatingSystem);
         }
-//        System.out.println(operatingSystem.toString());
-//        if(!operatingSystem.checkAllProcessesFinished())
-//            execute();
+
     }
 
 
@@ -59,7 +61,6 @@ public class Interpreter {
             interpreter.getOs().createProcess("src/Program_"+i+".txt");
         }
         interpreter.execute();
-//        System.out.println(interpreter.getOs().toString());
     }
 
 }
