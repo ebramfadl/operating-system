@@ -13,47 +13,41 @@ public class Interpreter {
     }
 
     public void execute(){
-        operatingSystem.reSchedule();
+        while (! operatingSystem.checkAllProcessesFinished()) {
 
-        int processId = operatingSystem.getReadyQueue().getFirst();
-        int processLocation = operatingSystem.getProcessesLocations().indexOf(processId);
-        Process currentProcess = operatingSystem.getMemory().get(processLocation);
+            int processId = operatingSystem.getReadyQueue().getFirst();
+            int processLocation = operatingSystem.getProcessesLocations().indexOf(processId);
+            Process currentProcess = operatingSystem.getMemory().get(processLocation);
 
-        String[] instruction = currentProcess.getInstructions().get( currentProcess.getPcb().getPC() ).split(" ");
+            String[] instruction = currentProcess.getInstructions().get(currentProcess.getPcb().getPC()).split(" ");
 
-        if(instruction[0].equals("assign")){
-            if(instruction.length == 3){
-                operatingSystem.writeToMemory(instruction[1],processLocation,false,"");
+            if (instruction[0].equals("assign")) {
+                if (instruction.length == 3) {
+                    operatingSystem.writeToMemory(instruction[1], processLocation, false, "");
 //                operatingSystem.reSchedule();
-            }
-            else{
-                operatingSystem.writeToMemory(instruction[1],processLocation,true,instruction[3]);
+                } else {
+                    operatingSystem.writeToMemory(instruction[1], processLocation, true, instruction[3]);
 //                operatingSystem.reSchedule();
+                }
+
+            } else if (instruction[0].equals("print")) {
+
+            } else if (instruction[0].equals("printFromTo")) {
+
+            } else if (instruction[0].equals("writeFile")) {
+
+            } else if (instruction[0].equals("readFile")) {
+
+            } else if (instruction[0].equals("semWait")) {
+
+            } else if (instruction[0].equals("semSignal")) {
+
             }
-
+            System.out.println(operatingSystem);
         }
-        else if(instruction[0].equals("print")){
-
-        }
-        else if(instruction[0].equals("printFromTo")){
-
-        }
-        else if(instruction[0].equals("writeFile")){
-
-        }
-        else if(instruction[0].equals("readFile")){
-
-        }
-        else if(instruction[0].equals("semWait")){
-
-        }
-        else if(instruction[0].equals("semSignal")){
-
-        }
-
-        System.out.println(operatingSystem.toString());
-        if(!operatingSystem.checkAllProcessesFinished())
-            execute();
+//        System.out.println(operatingSystem.toString());
+//        if(!operatingSystem.checkAllProcessesFinished())
+//            execute();
     }
 
 

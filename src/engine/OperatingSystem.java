@@ -142,10 +142,20 @@ public class OperatingSystem {
     public void reSchedule(){
         int processId = readyQueue.getFirst();
         int processLocation = processesLocations.indexOf(processId);
-        Process currentProcess = memory.get(processId);
+        Process currentProcess = memory.get(processLocation);
+
+        currentProcess.setCompletedInstructions(currentProcess.getCompletedInstructions() + 1);
+        currentProcess.getPcb().setState(ProcessState.RUNNING);
+        currentProcess.getPcb().setPC(currentProcess.getPcb().getPC()+1);
+        if(currentProcess.getPcb().getPC() == currentProcess.getInstructions().size()){
+            currentProcess.getPcb().setState(ProcessState.COMPLETED);
+            readyQueue.remove(0);
+        }
 
         if(currentProcess.getCompletedInstructions() >= maximumInstructionsPerSlice){
             currentProcess.getPcb().setState(ProcessState.READY);
+            if(readyQueue.isEmpty())
+                return;
             readyQueue.add(readyQueue.remove());
         }
 
@@ -184,14 +194,8 @@ public class OperatingSystem {
             case "c" : process.setC(value);break;
         }
 
-        process.getPcb().setPC(process.getPcb().getPC()+1);
-        if(process.getPcb().getPC() == process.getInstructions().size()){
-            process.getPcb().setState(ProcessState.COMPLETED);
-            readyQueue.remove(0);
-//            completedProcesses++;
-        }
-        process.setCompletedInstructions(process.getCompletedInstructions()+1);
-        process.getPcb().setState(ProcessState.RUNNING);
+        reSchedule();
+//        memory.get(processLocation).setCompletedInstructions(process.getCompletedInstructions()+1);
 //        processesInstructionsPerSlice.set(processLocation,completedInstructions+1);
     }
 
@@ -224,7 +228,7 @@ public class OperatingSystem {
         int memoryLocation = -1;
         for (Process process : memory){
             System.out.println("======================================Process "+process.getPcb().getProcessID()+"====================================");
-            System.out.println("Executed "+process.getCompletedInstructions()+"/"+maximumInstructionsPerSlice);
+            System.out.println("Executed "+process.getCompletedInstructions()+" instructions");
             System.out.println(++memoryLocation+" : a = "+process.getA());
             System.out.println(++memoryLocation+" : b = "+process.getB());
             System.out.println(++memoryLocation+" : c = "+process.getC());
