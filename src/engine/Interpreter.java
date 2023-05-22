@@ -1,5 +1,7 @@
 package engine;
 
+import java.io.IOException;
+
 public class Interpreter {
 
     private OperatingSystem operatingSystem ;
@@ -12,11 +14,11 @@ public class Interpreter {
         return operatingSystem;
     }
 
-    public void execute(){
+    public void execute() throws IOException {
         while (! operatingSystem.checkAllProcessesFinished()) {
 
             int processId = operatingSystem.getReadyQueue().getFirst();
-            int processLocation = processesLocations.get(processID);
+            int processLocation = operatingSystem.getProcessesLocations().get(processId);
             Process currentProcess = operatingSystem.getMemory().get(processLocation);
 
             String line = currentProcess.getInstructions().get(currentProcess.getPcb().getPC());
@@ -33,13 +35,14 @@ public class Interpreter {
 
             }
             else if (instruction[0].equals("print")) {
-
+                operatingSystem.print(instruction[1],processId);
             }
             else if (instruction[0].equals("printFromTo")) {
-
+                operatingSystem.printFromTo(instruction[1],instruction[2],processId);
             }
-            else if (instruction[0].equals("writeFile")) {
 
+            else if (instruction[0].equals("writeFile")) {
+                operatingSystem.writeFile(instruction[1],instruction[2],processId);
             }
             else if (instruction[0].equals("semWait")) {
 
@@ -54,7 +57,7 @@ public class Interpreter {
 
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Interpreter interpreter = new Interpreter();
 
         for (int i = 1 ; i <= 3 ; i++){

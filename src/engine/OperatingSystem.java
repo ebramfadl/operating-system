@@ -1,6 +1,8 @@
 package engine;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 public class OperatingSystem {
@@ -214,6 +216,61 @@ public class OperatingSystem {
             e.printStackTrace();
         }
         return str;
+    }
+    public void print(String var, int processId) {
+        int processLocation = processesLocations.get(processId);
+        Process process = memory.get(processLocation);
+        switch (var){
+            case "a":System.out.println(process.getA());break;
+            case "b":System.out.println(process.getB());break;
+            case "c":System.out.println(process.getC());break;
+        }
+        reSchedule();
+    }
+    public void printFromTo(String x, String y, int processId) {
+        int processLocation = processesLocations.get(processId);
+        Process process = memory.get(processLocation);
+        int a = 0,b = 0;
+        switch (x) {
+            case "a": a = (int)process.getA();break;
+            case "b": a = (int)process.getB();break;
+            case "c": a = (int)process.getC();break;
+        }
+        switch (y) {
+            case "a": b = (int)process.getA();break;
+            case "b": b = (int)process.getB();break;
+            case "c": b = (int)process.getC();break;
+        }
+        for (int i=a;i<=b;i++) {
+                System.out.print(i + " ");
+        }
+        reSchedule();
+    }
+
+    public void writeFile(String x, String y, int processId) throws IOException {
+        int processLocation = processesLocations.get(processId);
+        Process process = memory.get(processLocation);
+        String filename = "src/";
+        Object data = null;
+        switch (x) {
+            case "a":  filename += (String)process.getA();break;
+            case "b":  filename += (String)process.getB();break;
+            case "c":  filename += (String)process.getC();break;
+        }
+        switch (y) {
+            case "a": data = (Object)process.getA();break;
+            case "b": data = (Object)process.getB();break;
+            case "c": data = (Object)process.getC();break;
+        }
+        FileWriter fileWriter = new FileWriter(filename);
+        fileWriter.write(data.toString());
+        fileWriter.close();
+
+        reSchedule();
+    }
+
+    public void semWait() {
+
     }
 
     public boolean checkAllProcessesFinished(){
