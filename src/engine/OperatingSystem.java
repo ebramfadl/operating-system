@@ -175,7 +175,8 @@ public class OperatingSystem {
 
     }
 
-    public void writeToMemory(String var, int processLocation,boolean isReadFile,String filePathVar){
+    public void writeToMemory(String var, int processID,boolean isReadFile,String filePathVar){
+        int processLocation = processesLocations.get(processID);
         Process process = memory.get(processLocation);
         Object filePath = "";
         switch (filePathVar){
@@ -248,6 +249,7 @@ public class OperatingSystem {
         }
 
     }
+
 
 
 

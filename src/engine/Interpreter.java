@@ -16,7 +16,7 @@ public class Interpreter {
         while (! operatingSystem.checkAllProcessesFinished()) {
 
             int processId = operatingSystem.getReadyQueue().getFirst();
-            int processLocation = operatingSystem.getProcessesLocations().get(processId);
+            int processLocation = processesLocations.get(processID);
             Process currentProcess = operatingSystem.getMemory().get(processLocation);
 
             String line = currentProcess.getInstructions().get(currentProcess.getPcb().getPC());
@@ -26,9 +26,9 @@ public class Interpreter {
             if (instruction[0].equals("assign")) {
                 if (instruction.length == 3) {
                     System.out.println("Enter the value of variable : "+instruction[1]);
-                    operatingSystem.writeToMemory(instruction[1], processLocation, false, "");
+                    operatingSystem.writeToMemory(instruction[1], processId, false, "");
                 } else {
-                    operatingSystem.writeToMemory(instruction[1], processLocation, true, instruction[3]);
+                    operatingSystem.writeToMemory(instruction[1], processId, true, instruction[3]);
                 }
 
             }
