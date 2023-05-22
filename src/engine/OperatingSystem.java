@@ -1,15 +1,14 @@
 package engine;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 
 public class OperatingSystem {
 
     private ArrayList<Process> memory;
-    private ArrayList<Integer> processesLocations;
+    private Hashtable<Integer,Integer> processesLocations;
+    private Hashtable<Integer,Integer> completedInstructions;
+    private Hashtable<Integer,Integer> processBlockSize;
 
     private int availableMemorySpace;
     private int numberOfProcesses;
@@ -29,7 +28,9 @@ public class OperatingSystem {
         numberOfProcesses = 0;
         readyQueue = new LinkedList<>();
         blockedQueue = new LinkedList<>();
-        processesLocations = new ArrayList<Integer>();
+        processesLocations = new Hashtable<Integer,Integer>();
+        completedInstructions = new Hashtable<Integer,Integer>();
+        processBlockSize = new Hashtable<Integer,Integer>();
 
         maximumInstructionsPerSlice = 2;
     }
@@ -38,7 +39,7 @@ public class OperatingSystem {
         return memory;
     }
 
-    public ArrayList<Integer> getProcessesLocations() {
+    public Hashtable<Integer,Integer> getProcessesLocations() {
         return processesLocations;
     }
 
@@ -90,6 +91,18 @@ public class OperatingSystem {
         this.outputMutex = outputMutex;
     }
 
+
+
+    public Hashtable<Integer, Integer> getCompletedInstructions() {
+        return completedInstructions;
+    }
+
+
+    public Hashtable<Integer, Integer> getProcessBlockSize() {
+        return processBlockSize;
+    }
+
+
     public void createProcess(String filePath){
 
         File file = new File(filePath);
@@ -112,13 +125,16 @@ public class OperatingSystem {
         Integer b = null;
         Integer c = null;
 
+        int oldNumOfProcesses = numberOfProcesses;
         PCB pcb = new PCB(++numberOfProcesses,ProcessState.READY,0,0,instructions.size()-1);
         Process process = new Process(a,b,c,pcb,instructions);
 
         availableMemorySpace -= process.getProcessBlockSize();
 
         memory.add(process);
-        processesLocations.add(process.getPcb().getProcessID());
+        processesLocations.put(process.getPcb().getProcessID(),oldNumOfProcesses);
+        completedInstructions.put(process.getPcb().getProcessID(),0);
+        processBlockSize.put(process.getPcb().getProcessID(),8+instructions.size());
         readyQueue.add(process.getPcb().getProcessID());
 
     }
@@ -126,7 +142,7 @@ public class OperatingSystem {
 
     public void reSchedule(){
         int processId = readyQueue.getFirst();
-        int processLocation = processesLocations.indexOf(processId);
+        int processLocation = processesLocations.get(processId);
         Process currentProcess = memory.get(processLocation);
 
         currentProcess.setCompletedInstructions(currentProcess.getCompletedInstructions() + 1);

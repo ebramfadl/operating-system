@@ -16,7 +16,7 @@ public class Interpreter {
         while (! operatingSystem.checkAllProcessesFinished()) {
 
             int processId = operatingSystem.getReadyQueue().getFirst();
-            int processLocation = operatingSystem.getProcessesLocations().indexOf(processId);
+            int processLocation = operatingSystem.getProcessesLocations().get(processId);
             Process currentProcess = operatingSystem.getMemory().get(processLocation);
 
             String line = currentProcess.getInstructions().get(currentProcess.getPcb().getPC());
