@@ -26,10 +26,27 @@ public class Interpreter {
             System.out.println("Executing instruction [ "+line+" ] From Process "+currentProcess.getPcb().getProcessID());
             if (instruction[0].equals("assign")) {
                 if (instruction.length == 3) {
-                    System.out.println("Enter the value of variable : "+instruction[1]);
-                    operatingSystem.writeToMemory(instruction[1], processId, false, "");
-                } else {
-                    operatingSystem.writeToMemory(instruction[1], processId, true, instruction[3]);
+
+                    if(operatingSystem.getProcessesInput().containsKey(processId)){
+                        System.out.println("Process "+processId+" is assignning "+instruction[1]+" to input");
+                        operatingSystem.writeToMemory(instruction[1], processId,operatingSystem.getProcessesInput().get(processId));
+                    }
+                    else {
+                        System.out.println("Process "+processId+" is taking a user input ");
+                        Object input = operatingSystem.takeUserInput();
+                        operatingSystem.getProcessesInput().put(processId,input);
+                    }
+                }
+                else {
+                    if(operatingSystem.getProcessesInput().containsKey(processId)){
+                        System.out.println("Process "+processId+" is assignning "+instruction[1]+" to data in file "+instruction[3]);
+                        operatingSystem.writeToMemory(instruction[1],processId,operatingSystem.getProcessesInput().get(processId));
+                    }
+                    else {
+                        System.out.println("Process "+processId+" is reading file "+instruction[3]);
+                        Object fileData = operatingSystem.readFile(instruction[3]);
+                        operatingSystem.getProcessesInput().put(processId,fileData);
+                    }
                 }
 
             }
@@ -44,10 +61,10 @@ public class Interpreter {
                 operatingSystem.writeFile(instruction[1],instruction[2],processId);
             }
             else if (instruction[0].equals("semWait")) {
-
+                operatingSystem.semWait(processId,instruction[1]);
             }
             else if (instruction[0].equals("semSignal")) {
-
+                operatingSystem.semSignal(processId,instruction[1]);
             }
             System.out.println(operatingSystem);
         }

@@ -11,6 +11,7 @@ public class OperatingSystem {
     private Hashtable<Integer,Integer> processesLocations;
     private Hashtable<Integer,Integer> completedInstructions;
     private Hashtable<Integer,Integer> processBlockSize;
+    private Hashtable<Integer,Object> processesInput;
 
     private int availableMemorySpace;
     private int numberOfProcesses;
@@ -18,9 +19,13 @@ public class OperatingSystem {
     private LinkedList<Integer> readyQueue;
     private LinkedList<Integer> blockedQueue;
 
-    private boolean fileMutex;
-    private boolean inputMutex;
-    private boolean outputMutex;
+    private Mutex fileMutex;
+    private Mutex inputMutex;
+    private Mutex outputMutex;
+
+//    ArrayList<Integer> fileBlockedProcesses;
+//    ArrayList<Integer> inputBlockedProcesses;
+//    ArrayList<Integer> outputBlockedProcesses;
 
     private int maximumInstructionsPerSlice;
 
@@ -33,8 +38,9 @@ public class OperatingSystem {
         processesLocations = new Hashtable<Integer,Integer>();
         completedInstructions = new Hashtable<Integer,Integer>();
         processBlockSize = new Hashtable<Integer,Integer>();
-
+        processesInput = new Hashtable<Integer,Object>();
         maximumInstructionsPerSlice = 2;
+
     }
 
     public ArrayList<Process> getMemory() {
@@ -69,31 +75,17 @@ public class OperatingSystem {
         return blockedQueue;
     }
 
-    public boolean getFileMutex() {
+    public Mutex getFileMutex() {
         return fileMutex;
     }
 
-    public void setFileMutex(boolean fileMutex) {
-        this.fileMutex = fileMutex;
-    }
-
-    public boolean getInputMutex() {
+    public Mutex getInputMutex() {
         return inputMutex;
     }
 
-    public void setInputMutex(boolean inputMutex) {
-        this.inputMutex = inputMutex;
-    }
-
-    public boolean getOutputMutex() {
+    public Mutex getOutputMutex() {
         return outputMutex;
     }
-
-    public void setOutputMutex(boolean outputMutex) {
-        this.outputMutex = outputMutex;
-    }
-
-
 
     public Hashtable<Integer, Integer> getCompletedInstructions() {
         return completedInstructions;
@@ -104,6 +96,9 @@ public class OperatingSystem {
         return processBlockSize;
     }
 
+    public Hashtable<Integer, Object> getProcessesInput() {
+        return processesInput;
+    }
 
     public void createProcess(String filePath){
 
@@ -150,7 +145,7 @@ public class OperatingSystem {
         return process;
     }
 
-    public void reSchedule(){
+    public void reSchedule(boolean doubledInstruction){
         int processId = readyQueue.getFirst();
         int processLocation = processesLocations.get(processId);
         Process currentProcess = memory.get(processLocation);
@@ -159,7 +154,9 @@ public class OperatingSystem {
         completedInstructions.put(processId,oldInstructions+1);
 
         currentProcess.getPcb().setState(ProcessState.RUNNING);
-        currentProcess.getPcb().setPC(currentProcess.getPcb().getPC()+1);
+        if(!doubledInstruction){
+            currentProcess.getPcb().setPC(currentProcess.getPcb().getPC()+1);
+        }
         if(currentProcess.getPcb().getPC() == currentProcess.getInstructions().size()){
             currentProcess.getPcb().setState(ProcessState.COMPLETED);
             readyQueue.remove(0);
@@ -177,42 +174,33 @@ public class OperatingSystem {
 
     public Object takeUserInput(){
         Scanner scanner = new Scanner(System.in);
-
+        Object result = "";
         if(scanner.hasNextInt()){
-            return scanner.nextInt();
+            result = scanner.nextInt();
         }
         else if(scanner.hasNextDouble()){
-            return scanner.nextDouble();
+            result = scanner.nextDouble();
         }
+        else {
+            result = scanner.nextLine();
+        }
+
+        reSchedule(true);
         return scanner.nextLine();
 
     }
 
-    public void writeToMemory(String var, int processID,boolean isReadFile,String filePathVar){
+    public void writeToMemory(String var, int processID,Object value){
         int processLocation = processesLocations.get(processID);
         Process process = memory.get(processLocation);
-        Object filePath = "";
-        switch (filePathVar){
-            case "a" : filePath = process.getA();break;
-            case "b" : filePath = process.getB();break;
-            case "c" : filePath = process.getC();break;
-        }
-        Object value;
-        if(isReadFile) {
-            System.out.println("Process "+processID+" is reading file "+filePath);
-            value = readFile((String) filePath);
-        }
-        else {
-            System.out.println("Process "+processID+" is requesting a user input for "+var);
-            value = takeUserInput();
-        }
+
         switch (var){
             case "a" : process.setA(value);System.out.println("Process "+processID+" is setting a = "+process.getA());break;
             case "b" : process.setB(value);System.out.println("Process "+processID+" is setting b = "+process.getB());break;
             case "c" : process.setC(value);System.out.println("Process "+processID+" is setting c = "+process.getC());break;
         }
 
-        reSchedule();
+        reSchedule(false);
     }
 
 
@@ -229,6 +217,7 @@ public class OperatingSystem {
         catch (Exception e){
             e.printStackTrace();
         }
+        reSchedule(true);
         return str;
     }
     public void print(String var, int processId) {
@@ -239,7 +228,7 @@ public class OperatingSystem {
             case "b":System.out.println("Process "+processId+" prints b = "+process.getB());break;
             case "c":System.out.println("Process "+processId+" prints c = "+process.getC());break;
         }
-        reSchedule();
+        reSchedule(false);
     }
 
     public void printFromTo(String x, String y, int processId) {
@@ -260,7 +249,7 @@ public class OperatingSystem {
         for (int i=a;i<=b;i++) {
                 System.out.print(i + " , ");
         }
-        reSchedule();
+        reSchedule(false);
     }
 
     public void writeFile(String x, String y, int processId) throws IOException {
@@ -283,19 +272,52 @@ public class OperatingSystem {
         fileWriter.write(data.toString());
         fileWriter.close();
 
-        reSchedule();
+        reSchedule(false);
     }
 
-    public void semWait() {
 
-    }
 
     public boolean checkAllProcessesFinished(){
         return readyQueue.isEmpty();
     }
 
+    public void semWait(int processId,String mutexName){
+        boolean mutexResult = false;
+        switch (mutexName){
+            case "userInput" : mutexResult = inputMutex.semWait(processId);break;
+            case "userOutput" : mutexResult = outputMutex.semWait(processId);break;
+            case "file" : mutexResult = fileMutex.semWait(processId);break;
+        }
 
+        if (mutexResult){
+            reSchedule(false);
+        }
+        else {
+            blockedQueue.add(processId);
+            readyQueue.removeFirst();
+        }
+    }
 
+    public void semSignal(int processId, String mutexName){
+
+        ArrayList<Integer> waitingProcesses = null;
+        Mutex mutex = null;
+        switch (mutexName){
+            case "userInput" : mutex = inputMutex ;break;
+            case "userOutput" : mutex = outputMutex;break;
+            case "file" : mutex = fileMutex;break;
+        }
+
+        waitingProcesses = mutex.semSignal();
+        mutex.clearWaitingProcesses();
+
+        for (Integer pid : waitingProcesses){
+            blockedQueue.remove(pid);
+            readyQueue.add(pid);
+        }
+
+        reSchedule(false);
+    }
 
     public void displayMemoryContent(){
         int memoryLocation = -1;
