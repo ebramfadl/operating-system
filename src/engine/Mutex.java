@@ -26,16 +26,19 @@ public class Mutex {
 
     public boolean semWait(int processId){
         if (status == true){
+            System.out.println("Resource accuired!");
             status = false;
             return true;
         }
         else {
+            System.out.println("Resource not availabale! Process is blocked");
             waitingProcesses.add(processId);
             return false;
         }
     }
 
     public ArrayList<Integer> semSignal(){
+        System.out.println("Resource released!");
         status = true;
         return waitingProcesses;
     }

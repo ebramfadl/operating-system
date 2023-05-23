@@ -23,10 +23,6 @@ public class OperatingSystem {
     private Mutex inputMutex;
     private Mutex outputMutex;
 
-//    ArrayList<Integer> fileBlockedProcesses;
-//    ArrayList<Integer> inputBlockedProcesses;
-//    ArrayList<Integer> outputBlockedProcesses;
-
     private int maximumInstructionsPerSlice;
 
     public OperatingSystem(){
@@ -40,6 +36,9 @@ public class OperatingSystem {
         processBlockSize = new Hashtable<Integer,Integer>();
         processesInput = new Hashtable<Integer,Object>();
         maximumInstructionsPerSlice = 2;
+        inputMutex = new Mutex();
+        outputMutex = new OutputMutex();
+        fileMutex = new FileMutex();
 
     }
 
@@ -186,7 +185,7 @@ public class OperatingSystem {
         }
 
         reSchedule(true);
-        return scanner.nextLine();
+        return result;
 
     }
 
@@ -204,8 +203,19 @@ public class OperatingSystem {
     }
 
 
-    public Object readFile(String filePath){
-        File file = new File("src/"+filePath);
+    public Object readFile(String var , int processId){
+
+        int processLocation = processesLocations.get(processId);
+        Process process = memory.get(processLocation);
+        String filePath = "src/";
+
+        switch (var){
+            case "a" : filePath += process.getA();break;
+            case "b" : filePath += process.getB();break;
+            case "c" : filePath += process.getC();break;
+        }
+
+        File file = new File(filePath);
         String str = "";
         try {
             Scanner scanner = new Scanner(file);
@@ -218,6 +228,7 @@ public class OperatingSystem {
             e.printStackTrace();
         }
         reSchedule(true);
+        System.out.println(str);
         return str;
     }
     public void print(String var, int processId) {
@@ -295,6 +306,7 @@ public class OperatingSystem {
         else {
             blockedQueue.add(processId);
             readyQueue.removeFirst();
+            completedInstructions.put(processId,0);
         }
     }
 
@@ -309,13 +321,11 @@ public class OperatingSystem {
         }
 
         waitingProcesses = mutex.semSignal();
-        mutex.clearWaitingProcesses();
-
         for (Integer pid : waitingProcesses){
             blockedQueue.remove(pid);
             readyQueue.add(pid);
         }
-
+        mutex.clearWaitingProcesses();
         reSchedule(false);
     }
 
@@ -323,7 +333,7 @@ public class OperatingSystem {
         int memoryLocation = -1;
         for (Process process : memory){
             System.out.println("===================================Process "+process.getPcb().getProcessID()+"==========================");
-            System.out.println("Executed "+process.getCompletedInstructions()+" instructions");
+            System.out.println("Executed "+completedInstructions.get(process.getPcb().getProcessID())+" instructions");
             System.out.println(++memoryLocation+" : a = "+process.getA());
             System.out.println(++memoryLocation+" : b = "+process.getB());
             System.out.println(++memoryLocation+" : c = "+process.getC());

@@ -11,7 +11,6 @@ public class Process {
     private PCB pcb;
     private ArrayList<String> instructions;
 
-    private int completedInstructions;
 
     private int processBlockSize;
 
@@ -20,7 +19,6 @@ public class Process {
         this.b = b;
         this.c = c;
         this.pcb = pcb;
-        this.completedInstructions = 0;
 
         this.instructions = new ArrayList<>();
 
@@ -72,11 +70,5 @@ public class Process {
         this.processBlockSize = processBlockSize;
     }
 
-    public int getCompletedInstructions() {
-        return completedInstructions;
-    }
 
-    public void setCompletedInstructions(int completedInstructions) {
-        this.completedInstructions = completedInstructions;
-    }
 }

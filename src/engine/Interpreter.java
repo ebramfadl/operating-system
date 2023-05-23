@@ -30,6 +30,7 @@ public class Interpreter {
                     if(operatingSystem.getProcessesInput().containsKey(processId)){
                         System.out.println("Process "+processId+" is assignning "+instruction[1]+" to input");
                         operatingSystem.writeToMemory(instruction[1], processId,operatingSystem.getProcessesInput().get(processId));
+                        operatingSystem.getProcessesInput().remove(processId);
                     }
                     else {
                         System.out.println("Process "+processId+" is taking a user input ");
@@ -41,10 +42,12 @@ public class Interpreter {
                     if(operatingSystem.getProcessesInput().containsKey(processId)){
                         System.out.println("Process "+processId+" is assignning "+instruction[1]+" to data in file "+instruction[3]);
                         operatingSystem.writeToMemory(instruction[1],processId,operatingSystem.getProcessesInput().get(processId));
+                        operatingSystem.getProcessesInput().remove(processId);
+
                     }
                     else {
                         System.out.println("Process "+processId+" is reading file "+instruction[3]);
-                        Object fileData = operatingSystem.readFile(instruction[3]);
+                        Object fileData = operatingSystem.readFile(instruction[3],processId);
                         operatingSystem.getProcessesInput().put(processId,fileData);
                     }
                 }
