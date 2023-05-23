@@ -17,9 +17,8 @@ public class Interpreter {
     public void execute() throws IOException {
         while (! operatingSystem.checkAllProcessesFinished()) {
 
-            int processId = operatingSystem.getReadyQueue().getFirst();
-            int processLocation = operatingSystem.getProcessesLocations().get(processId);
-            Process currentProcess = operatingSystem.getMemory().get(processLocation);
+            Process currentProcess = operatingSystem.chooseProcess();
+            int processId = currentProcess.getPcb().getProcessID();
 
             String line = currentProcess.getInstructions().get(currentProcess.getPcb().getPC());
             String[] instruction = line.split(" ");

@@ -1,4 +1,4 @@
 assign a input
 assign b input
 print b
-assign c readFile b
+printFromTo a b

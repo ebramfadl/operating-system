@@ -1,3 +1,4 @@
 assign a input
 assign b input
 print b
+printFromTo a b

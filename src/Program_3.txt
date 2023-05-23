@@ -1,2 +1,3 @@
 assign a input
 assign b input
+assign c readFile b

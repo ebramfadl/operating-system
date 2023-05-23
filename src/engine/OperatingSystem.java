@@ -141,13 +141,23 @@ public class OperatingSystem {
 
     }
 
+    public Process chooseProcess(){
+        int processId = readyQueue.getFirst();
+        int processLocation = processesLocations.get(processId);
+        System.out.println("Process "+processId+" is chosen");
+        Process process = memory.get(processLocation);
+        process.getPcb().setState(ProcessState.RUNNING);
+        return process;
+    }
 
     public void reSchedule(){
         int processId = readyQueue.getFirst();
         int processLocation = processesLocations.get(processId);
         Process currentProcess = memory.get(processLocation);
 
-        currentProcess.setCompletedInstructions(currentProcess.getCompletedInstructions() + 1);
+        int oldInstructions = completedInstructions.get(processId);
+        completedInstructions.put(processId,oldInstructions+1);
+
         currentProcess.getPcb().setState(ProcessState.RUNNING);
         currentProcess.getPcb().setPC(currentProcess.getPcb().getPC()+1);
         if(currentProcess.getPcb().getPC() == currentProcess.getInstructions().size()){
@@ -155,11 +165,12 @@ public class OperatingSystem {
             readyQueue.remove(0);
         }
 
-        if(currentProcess.getCompletedInstructions() >= maximumInstructionsPerSlice){
+        if(completedInstructions.get(processId) >= maximumInstructionsPerSlice){
             currentProcess.getPcb().setState(ProcessState.READY);
             if(readyQueue.isEmpty())
                 return;
             readyQueue.add(readyQueue.remove());
+            completedInstructions.put(processId,0);
         }
 
     }
@@ -187,15 +198,18 @@ public class OperatingSystem {
             case "c" : filePath = process.getC();break;
         }
         Object value;
-        if(isReadFile)
+        if(isReadFile) {
+            System.out.println("Process "+processID+" is reading file "+filePath);
             value = readFile((String) filePath);
-        else
+        }
+        else {
+            System.out.println("Process "+processID+" is requesting a user input for "+var);
             value = takeUserInput();
-
+        }
         switch (var){
-            case "a" : process.setA(value);break;
-            case "b" : process.setB(value);break;
-            case "c" : process.setC(value);break;
+            case "a" : process.setA(value);System.out.println("Process "+processID+" is setting a = "+process.getA());break;
+            case "b" : process.setB(value);System.out.println("Process "+processID+" is setting b = "+process.getB());break;
+            case "c" : process.setC(value);System.out.println("Process "+processID+" is setting c = "+process.getC());break;
         }
 
         reSchedule();
@@ -221,12 +235,13 @@ public class OperatingSystem {
         int processLocation = processesLocations.get(processId);
         Process process = memory.get(processLocation);
         switch (var){
-            case "a":System.out.println(process.getA());break;
-            case "b":System.out.println(process.getB());break;
-            case "c":System.out.println(process.getC());break;
+            case "a":System.out.println("Process "+processId+" prints a = "+process.getA());break;
+            case "b":System.out.println("Process "+processId+" prints b = "+process.getB());break;
+            case "c":System.out.println("Process "+processId+" prints c = "+process.getC());break;
         }
         reSchedule();
     }
+
     public void printFromTo(String x, String y, int processId) {
         int processLocation = processesLocations.get(processId);
         Process process = memory.get(processLocation);
@@ -241,8 +256,9 @@ public class OperatingSystem {
             case "b": b = (int)process.getB();break;
             case "c": b = (int)process.getC();break;
         }
+        System.out.println("Process "+processId+" is printing numbers FROM "+a+" TO "+b);
         for (int i=a;i<=b;i++) {
-                System.out.print(i + " ");
+                System.out.print(i + " , ");
         }
         reSchedule();
     }
@@ -262,6 +278,7 @@ public class OperatingSystem {
             case "b": data = (Object)process.getB();break;
             case "c": data = (Object)process.getC();break;
         }
+        System.out.println("Process "+processId+" is writing "+data+" to file "+filename);
         FileWriter fileWriter = new FileWriter(filename);
         fileWriter.write(data.toString());
         fileWriter.close();
@@ -298,7 +315,8 @@ public class OperatingSystem {
                 if (process.getPcb().getPC() == i){
                     System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i) + "   <<<<<<<<<<< PC");
                 }
-                System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i));
+                else
+                    System.out.println(++memoryLocation+" : instruction = "+process.getInstructions().get(i));
             }
             System.out.println("=====================================================================");
             System.out.println();
@@ -329,7 +347,7 @@ public class OperatingSystem {
 
 
         System.out.println(str);
-        System.out.println(processesLocations);
+        System.out.println(completedInstructions);
         displayMemoryContent();
         return "";
     }
