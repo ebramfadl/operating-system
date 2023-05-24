@@ -14,8 +14,7 @@ public class Interpreter {
         return operatingSystem;
     }
 
-    public void execute() throws IOException {
-        while (! operatingSystem.checkAllProcessesFinished()) {
+    public void execute() throws IOException, ClassNotFoundException {
 
             Process currentProcess = operatingSystem.chooseProcess();
             int processId = currentProcess.getPcb().getProcessID();
@@ -70,19 +69,30 @@ public class Interpreter {
                 operatingSystem.semSignal(processId,instruction[1]);
             }
             System.out.println(operatingSystem);
-        }
+            operatingSystem.incrementClockCycles();
+
 
     }
 
-
-
-    public static void main(String[] args) throws IOException {
+    public static void startInterpreter() throws IOException, ClassNotFoundException {
         Interpreter interpreter = new Interpreter();
-
-        for (int i = 1 ; i <= 3 ; i++){
-            interpreter.getOs().createProcess("src/Program_"+i+".txt");
+        interpreter.getOs().createProcess("src/Program_1.txt");
+        int i = 0;
+        while (! interpreter.getOs().checkAllProcessesFinished()) {
+            if (i == 1){
+                interpreter.getOs().createProcess("src/Program_2.txt");
+            }
+            if (i == 4){
+                interpreter.getOs().createProcess("src/Program_3.txt");
+            }
+            interpreter.execute();
+            i++;
         }
-        interpreter.execute();
+    }
+
+
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
+        startInterpreter();
     }
 
 }

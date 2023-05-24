@@ -1,8 +1,6 @@
 package engine;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class OperatingSystem {
@@ -12,6 +10,7 @@ public class OperatingSystem {
     private Hashtable<Integer,Integer> completedInstructions;
     private Hashtable<Integer,Integer> processBlockSize;
     private Hashtable<Integer,Object> processesInput;
+    private ArrayList<Integer> processesOnDisk;
 
     private int availableMemorySpace;
     private int numberOfProcesses;
@@ -24,6 +23,7 @@ public class OperatingSystem {
     private Mutex outputMutex;
 
     private int maximumInstructionsPerSlice;
+    private int cycleNumber;
 
     public OperatingSystem(){
         memory = new ArrayList<>();
@@ -35,10 +35,12 @@ public class OperatingSystem {
         completedInstructions = new Hashtable<Integer,Integer>();
         processBlockSize = new Hashtable<Integer,Integer>();
         processesInput = new Hashtable<Integer,Object>();
+        processesOnDisk = new ArrayList<>();
         maximumInstructionsPerSlice = 2;
         inputMutex = new Mutex();
         outputMutex = new OutputMutex();
         fileMutex = new FileMutex();
+        cycleNumber = 0;
 
     }
 
@@ -99,8 +101,15 @@ public class OperatingSystem {
         return processesInput;
     }
 
-    public void createProcess(String filePath){
+    public int getCycleNumber() {
+        return cycleNumber;
+    }
 
+    public void incrementClockCycles() {
+        this.cycleNumber++;
+    }
+
+    public void createProcess(String filePath) throws IOException {
         File file = new File(filePath);
         ArrayList<String> instructions = new ArrayList<>();
 
@@ -124,19 +133,67 @@ public class OperatingSystem {
         int oldNumOfProcesses = numberOfProcesses;
         PCB pcb = new PCB(++numberOfProcesses,ProcessState.READY,0,0,instructions.size()-1);
         Process process = new Process(a,b,c,pcb,instructions);
+        System.out.println("Process "+process.getPcb().getProcessID()+" arrived");
 
-        availableMemorySpace -= process.getProcessBlockSize();
-
-        memory.add(process);
-        processesLocations.put(process.getPcb().getProcessID(),oldNumOfProcesses);
-        completedInstructions.put(process.getPcb().getProcessID(),0);
-        processBlockSize.put(process.getPcb().getProcessID(),8+instructions.size());
-        readyQueue.add(process.getPcb().getProcessID());
-
+        int allocatedSpaceInMemory = processBlockSize.get(process.getPcb().getProcessID());
+        if(allocatedSpaceInMemory > availableMemorySpace){
+            System.out.println("Allocated memory size is not aplicaple ");
+            swap();
+        }
+        addNewProcess(process);
     }
 
-    public Process chooseProcess(){
+    public void swap() throws IOException {
+        int removedProcessId = readyQueue.getLast();
+        System.out.println("Removing process "+removedProcessId);
+        int processLocation = processesLocations.get(removedProcessId);
+        Process removedProcess = memory.remove(processLocation);
+        processesLocations.remove(removedProcessId);
+        availableMemorySpace -= 8 + removedProcess.getInstructions().size();
+        processesOnDisk.add(removedProcessId);
+
+        System.out.println("Writing process "+removedProcessId+" into disk");
+        String filePath = "src/disk/"+removedProcessId+".bin";
+        FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+        objectOutputStream.writeObject(removedProcess);
+        objectOutputStream.close();
+        fileOutputStream.close();
+    }
+
+    public void addNewProcess(Process process){
+        availableMemorySpace -= 8 + process.getInstructions().size();
+        memory.add(process);
+        processesLocations.put(process.getPcb().getProcessID(),memory.indexOf(process));
+        completedInstructions.put(process.getPcb().getProcessID(),0);
+        processBlockSize.put(process.getPcb().getProcessID(),8+process.getInstructions().size());
+        readyQueue.add(process.getPcb().getProcessID());
+        System.out.println("Process "+process.getPcb().getProcessID()+" is added to memory");
+    }
+
+    public Process swapOutFromDisk(int processId) throws IOException, ClassNotFoundException {
+        String filePath = "src/disk/"+processId+".bin";
+        FileInputStream fileInputStream = new FileInputStream(filePath);
+        ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+
+        Process process = (Process) objectInputStream.readObject();
+        objectInputStream.close();
+        fileInputStream.close();
+        System.out.println("Getting process "+processId+" from disk");
+        processesOnDisk.remove(processId);
+        return process;
+    }
+
+    public Process chooseProcess() throws IOException, ClassNotFoundException {
         int processId = readyQueue.getFirst();
+        if(processesOnDisk.contains(processId)){
+            Process process = swapOutFromDisk(processId);
+            process.getPcb().setState(ProcessState.RUNNING);
+            memory.add(process);
+            processesLocations.put(processId,memory.indexOf(process));
+            return process;
+        }
+
         int processLocation = processesLocations.get(processId);
         System.out.println("Process "+processId+" is chosen");
         Process process = memory.get(processLocation);
@@ -207,7 +264,7 @@ public class OperatingSystem {
 
         int processLocation = processesLocations.get(processId);
         Process process = memory.get(processLocation);
-        String filePath = "src/";
+        String filePath = "src/disk/";
 
         switch (var){
             case "a" : filePath += process.getA();break;
@@ -266,7 +323,7 @@ public class OperatingSystem {
     public void writeFile(String x, String y, int processId) throws IOException {
         int processLocation = processesLocations.get(processId);
         Process process = memory.get(processLocation);
-        String filename = "src/";
+        String filename = "src/disk/";
         Object data = null;
         switch (x) {
             case "a":  filename += (String)process.getA();break;
@@ -361,7 +418,7 @@ public class OperatingSystem {
 
 
     public String toString(){
-        String str = "";
+        String str = "Cycle number "+cycleNumber+"\n";
         str += "Number of processes = "+numberOfProcesses+"\n"+
         "Available Memory Space = "+availableMemorySpace+"\n"+
         "Ready Queue [ ";
@@ -380,6 +437,10 @@ public class OperatingSystem {
 
         System.out.println(str);
         System.out.println(completedInstructions);
+        System.out.println("Input mutex blocked queue "+inputMutex.getWaitingProcesses());
+        System.out.println("Output mutex blocked queue "+outputMutex.getWaitingProcesses());
+        System.out.println("File mutex blocked queue "+fileMutex.getWaitingProcesses());
+
         displayMemoryContent();
         return "";
     }

@@ -1,8 +1,9 @@
 package engine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Process {
+public class Process implements Serializable {
 
     private Object a;
     private Object b;
@@ -10,9 +11,6 @@ public class Process {
 
     private PCB pcb;
     private ArrayList<String> instructions;
-
-
-    private int processBlockSize;
 
     public Process(Object a, Object b, Object c, PCB pcb, ArrayList<String> instructions) {
         this.a = a;
@@ -25,7 +23,6 @@ public class Process {
         for(String str : instructions){
             this.instructions.add(str);
         }
-        this.processBlockSize = 8 + instructions.size();
     }
 
 
@@ -59,15 +56,6 @@ public class Process {
 
     public ArrayList<String> getInstructions() {
         return instructions;
-    }
-
-
-    public int getProcessBlockSize() {
-        return processBlockSize;
-    }
-
-    public void setProcessBlockSize(int processBlockSize) {
-        this.processBlockSize = processBlockSize;
     }
 
 
