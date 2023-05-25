@@ -15,7 +15,6 @@ public class Interpreter {
     }
 
     public void execute() throws IOException, ClassNotFoundException {
-            System.out.println("Cycle number "+operatingSystem.getCycleNumber());
             Process currentProcess = operatingSystem.chooseProcess();
             int processId = currentProcess.getPcb().getProcessID();
 
@@ -83,7 +82,9 @@ public class Interpreter {
     public static void startInterpreter() throws IOException, ClassNotFoundException {
         Interpreter interpreter = new Interpreter();
         interpreter.getOs().createProcess("src/Program_1.txt");
-        int i = 0;
+        System.out.println(interpreter.getOs());
+        interpreter.getOs().incrementClockCycles();
+        int i = 1;
         while (! interpreter.getOs().checkAllProcessesFinished()) {
             if (i == 1){
                 interpreter.getOs().createProcess("src/Program_2.txt");
@@ -97,11 +98,11 @@ public class Interpreter {
                 interpreter.getOs().incrementClockCycles();
 
             }
-            else{
+            else
                 interpreter.execute();
-            }
             i++;
         }
+        System.out.println("All the processes are done!");
     }
 
 

@@ -139,16 +139,28 @@ public class OperatingSystem {
         if(allocatedSpaceInMemory > availableMemorySpace){
             System.out.println("Allocated memory size is not aplicaple ");
             writeToDisk();
+            updateProcessesLocations();
         }
         addNewProcess(process);
     }
 
+    public void updateProcessesLocations(){
+        processesLocations.clear();
+        for(Process process : memory){
+            processesLocations.put(process.getPcb().getProcessID(),memory.indexOf(process));
+        }
+    }
     public void writeToDisk() throws IOException {
-        int removedProcessId = readyQueue.getLast();
+        Integer removedProcessId = null;
+        if(readyQueue.size() == 1){
+            removedProcessId = memory.get(0).getPcb().getProcessID();
+        }
+        else
+            removedProcessId = readyQueue.getLast();
         System.out.println("Removing process "+removedProcessId);
         int processLocation = processesLocations.get(removedProcessId);
-        Process removedProcess = memory.remove(processLocation);
-        processesLocations.remove(removedProcessId);
+        Process removedProcess = memory.remove((int)processLocation);
+        updateProcessesLocations();
         availableMemorySpace += 8 + removedProcess.getInstructions().size();
         processesOnDisk.add(removedProcessId);
 
@@ -164,7 +176,7 @@ public class OperatingSystem {
     public void addNewProcess(Process process){
         availableMemorySpace -= 8 + process.getInstructions().size();
         memory.add(process);
-        processesLocations.put(process.getPcb().getProcessID(),memory.indexOf(process));
+        updateProcessesLocations();
         completedInstructions.put(process.getPcb().getProcessID(),0);
         processBlockSize.put(process.getPcb().getProcessID(),8+process.getInstructions().size());
         readyQueue.add(process.getPcb().getProcessID());
@@ -189,9 +201,14 @@ public class OperatingSystem {
         if(processesOnDisk.contains(processId)){
             Process process = swapOutFromDisk(processId);
             process.getPcb().setState(ProcessState.RUNNING);
+
+
+            if(availableMemorySpace < processBlockSize.get(process.getPcb().getProcessID()))
+                writeToDisk();
+
             memory.add(process);
-            processesLocations.put(processId,memory.indexOf(process));
-            writeToDisk();
+            availableMemorySpace -= 8 + process.getInstructions().size();
+            updateProcessesLocations();
             return process;
         }
 
@@ -214,8 +231,11 @@ public class OperatingSystem {
         if(!doubledInstruction){
             currentProcess.getPcb().setPC(currentProcess.getPcb().getPC()+1);
         }
-        if(currentProcess.getPcb().getPC() == currentProcess.getInstructions().size()){
+        if(currentProcess.getPcb().getPC() >= currentProcess.getInstructions().size()){
             currentProcess.getPcb().setState(ProcessState.COMPLETED);
+            memory.remove((int)processLocation);
+            availableMemorySpace += 8 + currentProcess.getInstructions().size();
+            updateProcessesLocations();
             readyQueue.remove(0);
         }
 
@@ -420,24 +440,16 @@ public class OperatingSystem {
 
     public String toString(){
         String str = "";
+        str += "Cycle Number "+cycleNumber+"\n";
         str += "Number of processes = "+numberOfProcesses+"\n"+
         "Available Memory Space = "+availableMemorySpace+"\n"+
-        "Ready Queue [ ";
+        "Ready Queue "+readyQueue+"\n";
 
-        for (Integer pid : readyQueue){
-            str += pid + " , ";
-        }
-        str += "]"+"\n";
-
-        str += "Blocked Queue [ ";
-        for (Integer pid : blockedQueue){
-            str += pid + " , ";
-        }
-        str += "]"+"\n";
-
+        str += "Blocked Queue "+blockedQueue+"\n";
 
         System.out.println(str);
-        System.out.println(completedInstructions);
+        System.out.println("Processes completed instructions per time slice "+completedInstructions);
+        System.out.println("Processes in memory "+processesLocations);
         System.out.println("Processes on disk "+processesOnDisk);
         System.out.println("Input mutex blocked queue "+inputMutex.getWaitingProcesses());
         System.out.println("Output mutex blocked queue "+outputMutex.getWaitingProcesses());
