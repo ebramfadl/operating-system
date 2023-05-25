@@ -1,6 +1,8 @@
 package engine;
 
-public class PCB {
+import java.io.Serializable;
+
+public class PCB implements Serializable {
 
     private int processID;
     private ProcessState state;

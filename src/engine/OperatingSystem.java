@@ -38,8 +38,8 @@ public class OperatingSystem {
         processesOnDisk = new ArrayList<>();
         maximumInstructionsPerSlice = 2;
         inputMutex = new Mutex();
-        outputMutex = new OutputMutex();
-        fileMutex = new FileMutex();
+        outputMutex = new Mutex();
+        fileMutex = new Mutex();
         cycleNumber = 0;
 
     }
@@ -135,21 +135,21 @@ public class OperatingSystem {
         Process process = new Process(a,b,c,pcb,instructions);
         System.out.println("Process "+process.getPcb().getProcessID()+" arrived");
 
-        int allocatedSpaceInMemory = processBlockSize.get(process.getPcb().getProcessID());
+        int allocatedSpaceInMemory = 8 + instructions.size();
         if(allocatedSpaceInMemory > availableMemorySpace){
             System.out.println("Allocated memory size is not aplicaple ");
-            swap();
+            writeToDisk();
         }
         addNewProcess(process);
     }
 
-    public void swap() throws IOException {
+    public void writeToDisk() throws IOException {
         int removedProcessId = readyQueue.getLast();
         System.out.println("Removing process "+removedProcessId);
         int processLocation = processesLocations.get(removedProcessId);
         Process removedProcess = memory.remove(processLocation);
         processesLocations.remove(removedProcessId);
-        availableMemorySpace -= 8 + removedProcess.getInstructions().size();
+        availableMemorySpace += 8 + removedProcess.getInstructions().size();
         processesOnDisk.add(removedProcessId);
 
         System.out.println("Writing process "+removedProcessId+" into disk");
@@ -180,7 +180,7 @@ public class OperatingSystem {
         objectInputStream.close();
         fileInputStream.close();
         System.out.println("Getting process "+processId+" from disk");
-        processesOnDisk.remove(processId);
+        processesOnDisk.remove((Object)processId);
         return process;
     }
 
@@ -191,6 +191,7 @@ public class OperatingSystem {
             process.getPcb().setState(ProcessState.RUNNING);
             memory.add(process);
             processesLocations.put(processId,memory.indexOf(process));
+            writeToDisk();
             return process;
         }
 
@@ -418,7 +419,7 @@ public class OperatingSystem {
 
 
     public String toString(){
-        String str = "Cycle number "+cycleNumber+"\n";
+        String str = "";
         str += "Number of processes = "+numberOfProcesses+"\n"+
         "Available Memory Space = "+availableMemorySpace+"\n"+
         "Ready Queue [ ";
@@ -437,6 +438,7 @@ public class OperatingSystem {
 
         System.out.println(str);
         System.out.println(completedInstructions);
+        System.out.println("Processes on disk "+processesOnDisk);
         System.out.println("Input mutex blocked queue "+inputMutex.getWaitingProcesses());
         System.out.println("Output mutex blocked queue "+outputMutex.getWaitingProcesses());
         System.out.println("File mutex blocked queue "+fileMutex.getWaitingProcesses());
